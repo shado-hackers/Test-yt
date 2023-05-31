@@ -1,1 +1,51 @@
 
+
+import requests
+import os
+
+def get_video_info(video_id):
+  """Gets the information for a YouTube video, including the available qualities."""
+  url = "https://www.youtube.com/watch?v=" + video_id
+  response = requests.get(url)
+  if response.status_code == 200:
+    data = response.json()
+    qualities = []
+    for format in data["streamingData"]["formats"]:
+      qualities.append({
+        "quality": format["qualityLabel"],
+        "url": format["url"]
+      })
+    return qualities
+  else:
+    return None
+
+def download_video(video_id, quality):
+  """Downloads a YouTube video in the specified quality."""
+  url = get_video_info(video_id)[quality]["url"]
+  response = requests.get(url, stream=True)
+  if response.status_code == 200:
+    filename = video_id + "." + quality
+    with open(filename, "wb") as f:
+      for chunk in response.iter_content(1024):
+        f.write(chunk)
+  else:
+    print("Error downloading video.")
+
+def main():
+  """Downloads a YouTube video from the user's input."""
+  video_id = input("Enter the YouTube video ID: ")
+  qualities = get_video_info(video_id)
+  if qualities is None:
+    print("Error getting video information.")
+    return
+
+  print("Available qualities:")
+  for quality in qualities:
+    print("  * " + quality["quality"])
+
+  quality = input("Select a quality: ")
+  download_video(video_id, quality)
+
+if __name__ == "__main__":
+  main()
+
